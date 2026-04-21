@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: router
+    static_configs:
+      - targets:
+          - router:8080
+        labels:
+          app: intelligent-router
+          cloud_provider: control-plane
+  - job_name: sample-app-aws
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - sample-app-aws:8000
+        labels:
+          app: sample-app
+          cloud_provider: aws
+  - job_name: sample-app-gcp
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - sample-app-gcp:8000
+        labels:
+          app: sample-app
+          cloud_provider: gcp

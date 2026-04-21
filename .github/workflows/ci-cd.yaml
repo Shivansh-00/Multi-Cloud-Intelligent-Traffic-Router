@@ -1,0 +1,45 @@
+name: ci-cd
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r services/router/requirements.txt
+          pip install -r services/sample-app/requirements.txt
+          pip install pytest
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Build router image
+        uses: docker/build-push-action@v6
+        with:
+          context: services/router
+          push: false
+          tags: multi-cloud-router/router:ci
+
+      - name: Build sample app image
+        uses: docker/build-push-action@v6
+        with:
+          context: services/sample-app
+          push: false
+          tags: multi-cloud-router/sample-app:ci

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Cloud Traffic Router Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7faf8;
+      --card: #ffffff;
+      --ink: #12231f;
+      --muted: #4f6660;
+      --line: #d8e6e0;
+      --ok: #128a62;
+      --warn: #b96f00;
+      --bad: #b6362f;
+      --accent: #0f766e;
+      --accent-soft: #d5f5ef;
+      --shadow: 0 15px 40px rgba(18, 35, 31, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 5%, #d6f3ec 0%, transparent 45%),
+        radial-gradient(circle at 92% 95%, #e7f3d1 0%, transparent 38%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+      animation: slide-in 500ms ease-out;
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero, .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 22px;
+      display: grid;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2vw, 2rem);
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .kpis {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .kpi {
+      background: linear-gradient(160deg, #f5fbf9, #ffffff);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .kpi-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.2fr 1fr;
+    }
+
+    .card {
+      padding: 16px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.05rem;
+    }
+
+    .backend-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .backend {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      background: #fcfefd;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.92rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .pill.ok { background: #d6f5ec; color: var(--ok); }
+    .pill.warn { background: #ffeccf; color: var(--warn); }
+    .pill.bad { background: #ffd9d7; color: var(--bad); }
+
+    .mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.86rem;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: auto 1fr auto auto auto;
+      align-items: center;
+    }
+
+    select, button {
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 9px 11px;
+      font: inherit;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      border: none;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    button.secondary {
+      background: #e6f4f1;
+      color: #134f49;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .events {
+      display: grid;
+      gap: 8px;
+      max-height: 320px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .event {
+      border-left: 4px solid var(--accent);
+      background: #f6fbfa;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+    }
+
+    .status {
+      min-height: 1.3rem;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <section class="hero">
+      <h1>Multi-Cloud Traffic Router Console</h1>
+      <p class="subtitle">Live control plane for failover, backend health, latency, and override operations.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-label">Active Backend</div><div id="activeBackend" class="kpi-value">-</div></div>
+        <div class="kpi"><div class="kpi-label">Manual Override</div><div id="manualOverride" class="kpi-value">none</div></div>
+        <div class="kpi"><div class="kpi-label">Override Mode</div><div id="overrideMode" class="kpi-value">preferred</div></div>
+        <div class="kpi"><div class="kpi-label">Healthy Backends</div><div id="healthyBackends" class="kpi-value">0</div></div>
+        <div class="kpi"><div class="kpi-label">Last Refresh</div><div id="lastRefresh" class="kpi-value">-</div></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Backends</h2>
+        <div id="backendList" class="backend-list"></div>
+      </article>
+
+      <article class="card">
+        <h2>Routing Controls</h2>
+        <div class="controls">
+          <label class="mono" for="backendSelector">backend</label>
+          <select id="backendSelector" aria-label="Backend selector"></select>
+          <label class="mono"><input id="strictToggle" type="checkbox" /> strict</label>
+          <button id="setOverrideButton">Set Override</button>
+          <button id="clearOverrideButton" class="secondary">Clear Override</button>
+        </div>
+        <p id="controlStatus" class="status"></p>
+
+        <h2>Failover Events</h2>
+        <div id="events" class="events"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const activeBackendEl = document.getElementById("activeBackend");
+    const manualOverrideEl = document.getElementById("manualOverride");
+    const overrideModeEl = document.getElementById("overrideMode");
+    const healthyBackendsEl = document.getElementById("healthyBackends");
+    const lastRefreshEl = document.getElementById("lastRefresh");
+    const backendListEl = document.getElementById("backendList");
+    const backendSelectorEl = document.getElementById("backendSelector");
+    const eventsEl = document.getElementById("events");
+    const controlStatusEl = document.getElementById("controlStatus");
+    const setOverrideButton = document.getElementById("setOverrideButton");
+    const clearOverrideButton = document.getElementById("clearOverrideButton");
+    const strictToggleEl = document.getElementById("strictToggle");
+
+    function statusPill(healthy, probeOk) {
+      if (!healthy || !probeOk) {
+        return '<span class="pill bad">Unhealthy</span>';
+      }
+      return '<span class="pill ok">Healthy</span>';
+    }
+
+    function fmt(value, fallback = "-") {
+      if (value === null || value === undefined || value === "") {
+        return fallback;
+      }
+      return value;
+    }
+
+    function eventTime(unixSeconds) {
+      if (!unixSeconds) {
+        return "unknown";
+      }
+      return new Date(unixSeconds * 1000).toLocaleTimeString();
+    }
+
+    async function fetchStatus() {
+      const response = await fetch("/router/status", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Status fetch failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function renderBackends(backends) {
+      backendListEl.innerHTML = "";
+      backendSelectorEl.innerHTML = "";
+
+      for (const backend of backends) {
+        const option = document.createElement("option");
+        option.value = backend.name;
+        option.textContent = `${backend.name} (${backend.cloud})`;
+        backendSelectorEl.appendChild(option);
+
+        const container = document.createElement("div");
+        container.className = "backend";
+        container.innerHTML = `
+          <div class="row">
+            <strong>${backend.name}</strong>
+            <span class="mono">${backend.cloud}</span>
+            ${statusPill(backend.healthy, backend.probe_ok)}
+          </div>
+          <div class="row"><span>Latency</span><span class="mono">probe ${fmt(backend.probe_latency_ms)} ms | ewma ${fmt(backend.ewma_latency_ms)} ms</span></div>
+          <div class="row"><span>Error Rate</span><span class="mono">${fmt((backend.error_rate * 100).toFixed(2))}%</span></div>
+          <div class="row"><span>Inflight</span><span class="mono">${fmt(backend.inflight_requests)}</span></div>
+          <div class="row"><span>Score</span><span class="mono">${fmt(backend.score)}</span></div>
+          <div class="row"><span>Probe Msg</span><span class="mono">${fmt(backend.probe_message)}</span></div>
+        `;
+        backendListEl.appendChild(container);
+      }
+    }
+
+    function renderEvents(events) {
+      eventsEl.innerHTML = "";
+      if (!events.length) {
+        eventsEl.innerHTML = "<div class='event'>No failover events yet.</div>";
+        return;
+      }
+
+      for (const event of events.slice(0, 25)) {
+        const row = document.createElement("div");
+        row.className = "event";
+        row.innerHTML = `
+          <div><strong>${fmt(event.from_backend)} ➜ ${fmt(event.to_backend)}</strong></div>
+          <div class="mono">reason: ${fmt(event.reason)}</div>
+          <div class="mono">time: ${eventTime(event.timestamp)}</div>
+        `;
+        eventsEl.appendChild(row);
+      }
+    }
+
+    async function refresh() {
+      try {
+        const status = await fetchStatus();
+        activeBackendEl.textContent = fmt(status.active_backend, "none");
+        manualOverrideEl.textContent = fmt(status.manual_override_backend, "none");
+        overrideModeEl.textContent = status.manual_override_strict ? "strict" : "preferred";
+        healthyBackendsEl.textContent = String(status.backends.filter((b) => b.healthy).length);
+        lastRefreshEl.textContent = new Date().toLocaleTimeString();
+        renderBackends(status.backends);
+        renderEvents(status.recent_events || []);
+      } catch (err) {
+        controlStatusEl.textContent = err.message;
+      }
+    }
+
+    async function setOverride() {
+      const selected = backendSelectorEl.value;
+      if (!selected) {
+        return;
+      }
+      setOverrideButton.disabled = true;
+      try {
+        const response = await fetch("/router/override", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ backend: selected, strict: strictToggleEl.checked })
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.detail || "Override failed");
+        }
+        const mode = payload.manual_override_strict ? "strict" : "preferred";
+        controlStatusEl.textContent = `Manual override set to ${payload.manual_override_backend} (${mode})`;
+      } catch (err) {
+        controlStatusEl.textContent = err.message;
+      } finally {
+        setOverrideButton.disabled = false;
+        await refresh();
+      }
+    }
+
+    async function clearOverride() {
+      clearOverrideButton.disabled = true;
+      try {
+        const response = await fetch("/router/override", { method: "DELETE" });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.detail || "Clear override failed");
+        }
+        controlStatusEl.textContent = "Manual override cleared";
+      } catch (err) {
+        controlStatusEl.textContent = err.message;
+      } finally {
+        clearOverrideButton.disabled = false;
+        await refresh();
+      }
+    }
+
+    setOverrideButton.addEventListener("click", setOverride);
+    clearOverrideButton.addEventListener("click", clearOverride);
+
+    refresh();
+    setInterval(refresh, 3000);
+  </script>
+</body>
+</html>

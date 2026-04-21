@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespaces.yaml
+  - sample-app-aws.yaml
+  - sample-app-gcp.yaml
+  - router.yaml
+  - nginx.yaml
+  - prometheus.yaml
+  - grafana.yaml
+  - prometheus-adapter.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: nginx-config
+    files:
+      - nginx.conf=nginx.conf
+  - name: prometheus-config
+    files:
+      - prometheus.yml=prometheus.yml
+  - name: prometheus-adapter-config
+    files:
+      - config.yaml=prometheus-adapter-config.yaml
+  - name: grafana-datasource
+    files:
+      - datasource.yaml=datasource.yaml
+  - name: grafana-dashboard-provider
+    files:
+      - dashboard-provider.yaml=dashboard-provider.yaml
+  - name: grafana-dashboard
+    files:
+      - router-dashboard.json=router-dashboard.json

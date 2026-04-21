@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: router-config
+  namespace: control-plane
+data:
+  BACKENDS_JSON: |
+    [
+      {
+        "name": "aws-primary",
+        "cloud": "aws",
+        "base_url": "http://sample-app-aws.aws-sim.svc.cluster.local:8000",
+        "base_weight": 1.0
+      },
+      {
+        "name": "gcp-secondary",
+        "cloud": "gcp",
+        "base_url": "http://sample-app-gcp.gcp-sim.svc.cluster.local:8000",
+        "base_weight": 1.0
+      }
+    ]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intelligent-router
+  namespace: control-plane
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: intelligent-router
+  template:
+    metadata:
+      labels:
+        app: intelligent-router
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: router
+          image: multi-cloud-router/router:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: router-config
+          env:
+            - name: TARGET_LATENCY_MS
+              value: "250"
+            - name: MAX_ERROR_RATE
+              value: "0.05"
+            - name: MAX_INFLIGHT
+              value: "100"
+            - name: PROBE_INTERVAL_SECONDS
+              value: "2"
+            - name: FAILURE_THRESHOLD
+              value: "2"
+            - name: PRIMARY_PREFERENCE_RATIO
+              value: "1.35"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intelligent-router
+  namespace: control-plane
+spec:
+  selector:
+    app: intelligent-router
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: intelligent-router
+  namespace: control-plane
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: intelligent-router
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
